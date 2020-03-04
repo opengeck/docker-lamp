@@ -1,0 +1,54 @@
+version: '3'
+services:
+  php:
+    container_name: lamp-php
+    build:
+      context: .
+      dockerfile: ./srv/php.dockerfile
+    volumes:
+      - ./srv/php.ini:/usr/local/etc/php/php.ini
+      # - ./srv/apache2.conf:/etc/apache2/apache2.conf
+      - ./app:/var/www/html
+    ports:
+      - 8080:80
+    networks:
+      - lamp
+    env_file:
+      - ./srv/common.env
+  mysql:
+    container_name: lamp-sql
+    image: mysql:5.7
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci --event-scheduler=ON
+    volumes:
+      - ./run/mysql:/var/lib/mysql
+      - ./srv/mysql_init:/docker-entrypoint-initdb.d
+    env_file:
+      - ./srv/common.env
+    networks:
+      - lamp
+    expose:
+      - '3306'
+  phpmyadmin:
+    container_name: lamp-pma
+    image: phpmyadmin/phpmyadmin
+    environment:
+      - PMA_HOST=lamp-sql
+      - PMA_USER=root
+    env_file:
+      - ./srv/common.env
+    networks:
+      - lamp
+    ports:
+      - 4000:80
+    volumes:
+      - ./run/phpmyadmin:/sessions
+  # composer:
+  #   container_name: lamp-composer
+  #   restart: 'no'
+  #   image: composer/composer:php7
+  #   command: install
+  #   volumes:
+  #     - ./app:/app
+networks:
+  lamp:
+    driver: bridge
